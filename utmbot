@@ -1,0 +1,52 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"strings"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
+
+func main() {
+	bot, err := tgbotapi.NewBotAPI("7322619403:AAHsGzjH06kzuWRK028ErMmexLhF03_qNjw")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	updateConfig := tgbotapi.NewUpdate(0)
+	updateConfig.Timeout = 60
+
+	updates := bot.GetUpdatesChan(updateConfig)
+
+	for update := range updates {
+		if update.Message == nil { // ignore non-Message Updates
+			continue
+		}
+
+		// Получаем текст сообщения
+		input := strings.TrimSpace(update.Message.Text)
+
+		// Проверяем, есть ли данные
+		if input == "" {
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Пожалуйста, введите данные.")
+			bot.Send(msg)
+			continue
+		}
+
+		// Разделяем ввод на составляющие
+		parts := strings.Fields(input)
+		if len(parts) != 4 {
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Вот небольшая инструкция, чтобы всё получилось: \n\n1. Пиши URL без https, а с www \n2. Вводи данные одной строкой с пробелами: URL SOURCE MEDIUM CAMPAIGN.\n")
+			bot.Send(msg)
+			continue
+		}
+
+		u, s, m, c := parts[0], parts[1], parts[2], parts[3]
+		utmLink := fmt.Sprintf("https://%s?utm_source=%s&utm_medium=%s&utm_campaign=%s", u, s, m, c)
+
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "ВОТ ТВОЯ UTM-метка:\n\n"+utmLink)
+		bot.Send(msg)
+
+	}
+}
